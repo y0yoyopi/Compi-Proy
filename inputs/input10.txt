@@ -1,0 +1,40 @@
+// ===================================================================
+//  AMP10 — BUCLES ANIDADOS
+//  Dos niveles de anidamiento: bucle externo (1000 iter) x bucle
+//  interno (2000 iter) = 2 000 000 evaluaciones totales. En cada
+//  iteracion interna se usa el indice del bucle externo como base de
+//  pow() para que el compilador no pueda elevar la expresion fuera del
+//  bucle interno. Aisla el beneficio conjunto de Sethi-Ullman + strength
+//  reduction en codigo que el compilador no puede reordenar trivialmente.
+// ===================================================================
+int main() {
+    int a, b, c, d, acc;
+    a = 3;
+    b = 5;
+    c = 7;
+    d = 2;
+    acc = 0;
+
+    int j;
+    j = 1;
+    while (j <= 1000) {
+        int i;
+        i = 0;
+        while (i < 2000) {
+            // j varia por iteracion externa: pow(j,2) no es constant-foldable
+            acc = acc
+                + pow(j, 2)
+                - pow(d, 4)
+                + (a + (b * (c - d)))
+                + ((10 - 4) * (3 + 2) - (20 / 4) + (7 * 7 - 49))
+                - (a * b + c * d)
+                + pow(a, 2) * 1;
+            i = i + 1;
+        }
+        j = j + 1;
+    }
+
+    print("-- Resultado bucles anidados --");
+    print(acc);
+    return 0;
+}

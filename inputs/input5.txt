@@ -1,0 +1,29 @@
+// ===================================================================
+//  AMP5 — CONSTANT FOLDING PROFUNDO
+//  Plegado de constantes en cascada con expresiones muy profundas
+//  (multiples niveles de operaciones sobre literales). El compilador
+//  optimizado colapsa TODO el lado derecho a un unico inmediato en
+//  compile-time; el no optimizado evalua decenas de operaciones en
+//  cada iteracion del bucle.
+//  Iteraciones: 5 000 000 para maximizar el gap.
+// ===================================================================
+int main() {
+    int acc;
+    acc = 0;
+
+    int i;
+    i = 0;
+    while (i < 5000000) {
+        acc = acc
+            + ((2 + 3) * (4 - 1) - (10 / 2) + (6 * 7) - (100 - 58) + (9 * 9) - (3 * 3 * 3))
+            + ((15 - 7) * (3 + 2) + (100 / 4) - (8 * 2) + (50 - 13) - (6 * 6) + (4 * 4 * 4))
+            + ((1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10) * 2 - 100 / 10)
+            + ((20 * 20 - 400) + (7 * 8 - 56) + (11 * 11 - 121) + (13 * 13 - 169))
+            - ((5 * 5) + (6 * 6) + (7 * 7) + (8 * 8) - (9 + 9 + 9 + 9 + 9 + 9 + 9 + 9 + 9));
+        i = i + 1;
+    }
+
+    print("-- Resultado folding profundo --");
+    print(acc);
+    return 0;
+}

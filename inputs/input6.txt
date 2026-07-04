@@ -1,0 +1,39 @@
+// ===================================================================
+//  AMP6 — SETHI-ULLMAN MAXIMO
+//  Arbol de expresion fuertemente desbalanceado: el sub-arbol derecho
+//  es siempre mas profundo que el izquierdo. Sethi-Ullman evalua primero
+//  el sub-arbol mas pesado (derecho aqui), reduciendo al minimo los
+//  registros necesarios y eliminando push/pop. Sin el reordenamiento,
+//  el compilador no optimizado genera muchos spills al stack.
+//  Iteraciones: 5 000 000.
+// ===================================================================
+int main() {
+    int a, b, c, d, e, f, g, h, acc;
+    a = 2;
+    b = 3;
+    c = 5;
+    d = 7;
+    e = 11;
+    f = 13;
+    g = 17;
+    h = 19;
+    acc = 0;
+
+    int i;
+    i = 0;
+    while (i < 5000000) {
+        // Cadena desbalanceada hacia la derecha: a + (b * (c - (d + (e * (f - (g + h))))))
+        acc = acc
+            + (a + (b * (c - (d + (e * (f - (g + h)))))))
+            + ((((a + b) * c) - d) * (e + (f * g)))
+            + (a * b + c * d + e * f + g * h)
+            - (a + b + c + d + e + f + g + h)
+            + ((a * c) - (b * d) + (e * g) - (f * h))
+            * 1;
+        i = i + 1;
+    }
+
+    print("-- Resultado Sethi-Ullman maximo --");
+    print(acc);
+    return 0;
+}

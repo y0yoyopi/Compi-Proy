@@ -1,0 +1,23 @@
+// ===================================================================
+//  AMP4 — POTENCIAS
+//  Uso intensivo de pow(). Aisla el efecto de la strength reduction:
+//  pow(x,2) y pow(x,4) con exponente constante se reemplazan por
+//  multiplicaciones directas (imulq) en vez de llamar a la funcion
+//  potencia() (exponenciacion recursiva D&C) en cada vuelta.
+// ===================================================================
+int main() {
+    int x, acc;
+    x = 3;
+    acc = 0;
+
+    int i;
+    i = 0;
+    while (i < 1000000) {
+        acc = acc + pow(x, 2) - pow(x, 4) + pow(2, 3) - pow(x, 2) + pow(3, 4);
+        i = i + 1;
+    }
+
+    print("-- Resultado potencias --");
+    print(acc);
+    return 0;
+}

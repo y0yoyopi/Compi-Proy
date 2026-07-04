@@ -1,0 +1,43 @@
+// ===================================================================
+//  AMP7 — STRENGTH REDUCTION INTENSIVO
+//  Uso masivo de pow() con exponentes 2 y 4 (los que el compilador
+//  optimizado reemplaza por imulq directas) mezclados con exponentes
+//  que NO tienen atajo (3, 5, 6) y con bases constantes que se pliegan.
+//  El ratio pow-con-atajo vs pow-sin-atajo es 2:1 para que la diferencia
+//  sea notable pero no trivial.
+//  Iteraciones: 2 000 000.
+// ===================================================================
+int main() {
+    int x, y, z, acc;
+    x = 3;
+    y = 5;
+    z = 7;
+    acc = 0;
+
+    int i;
+    i = 0;
+    while (i < 2000000) {
+        // pow(x,2)  -> imulq x,x          (strength reduction)
+        // pow(x,4)  -> tmp=x*x; imulq tmp,tmp  (strength reduction)
+        // pow(2,3)  -> 8  (constant folding de base y exponente)
+        // pow(y,3)  -> llamada real a __potencia
+        // pow(z,5)  -> llamada real a __potencia
+        // pow(3,4)  -> 81 (constant folding)
+        acc = acc
+            + pow(x, 2)
+            - pow(x, 4)
+            + pow(2, 3)
+            - pow(y, 3)
+            + pow(z, 5)
+            - pow(3, 4)
+            + pow(y, 2)
+            + pow(z, 4)
+            - pow(x, 2) * 2
+            + pow(y, 4) / 5;
+        i = i + 1;
+    }
+
+    print("-- Resultado strength reduction intensivo --");
+    print(acc);
+    return 0;
+}

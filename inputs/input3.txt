@@ -1,0 +1,27 @@
+// ===================================================================
+//  AMP3 — VARIABLES
+//  Expresiones con puras variables (nada de constantes literales fuera
+//  del contador del bucle). Aisla el efecto del atajo de operando
+//  "hoja" (evitar push/pop cuando un operando es variable/constante) y
+//  del orden de evaluacion Sethi-Ullman.
+// ===================================================================
+int main() {
+    int a, b, c, d, e, acc;
+    a = 2;
+    b = 3;
+    c = 5;
+    d = 7;
+    e = 11;
+    acc = 0;
+
+    int i;
+    i = 0;
+    while (i < 2000000) {
+        acc = acc + (a + b) + (c + d) + e - (a * b) + (c * d) - (a + b + c + d + e);
+        i = i + 1;
+    }
+
+    print("-- Resultado variables --");
+    print(acc);
+    return 0;
+}

@@ -1,0 +1,64 @@
+// ===================================================================
+//  AMP8 — STRESS TOTAL
+//  Test de estres maximo que combina TODAS las optimizaciones juntas:
+//    - Constant folding profundo en subeexpresiones constantes
+//    - Sethi-Ullman con arbol desbalanceado de 8 variables
+//    - Strength reduction de pow(x,2) y pow(x,4)
+//    - Cascade folding: pow(2,3), (5+3)*2, etc. son literales
+//    - Llamadas reales a funciones auxiliares (factorial, sumar)
+//  El bucle exterior (j) corre 100 veces sobre el bucle interior (i)
+//  de 50 000 iteraciones = 5 000 000 evaluaciones totales.
+// ===================================================================
+
+int factorial(int n) {
+    int ans;
+    if (n <= 1) {
+        ans = 1;
+    } else {
+        ans = n * factorial(n - 1);
+    }
+    return ans;
+}
+
+int sumar(int a, int b, int c) {
+    return a + b + c;
+}
+
+int main() {
+    int a, b, c, d, e, f, acc, tmp;
+    a = 2;
+    b = 3;
+    c = 5;
+    d = 7;
+    e = 11;
+    f = 13;
+    acc = 0;
+
+    int j;
+    j = 0;
+    while (j < 100) {
+        int i;
+        i = 0;
+        while (i < 50000) {
+            // Constant folding: (10-2)*(3+5) = 64, pow(2,3) = 8, (4*4-16) = 0
+            // Sethi-Ullman: arbol profundo con 6 variables
+            // Strength reduction: pow(a,2), pow(b,4), pow(c,2), pow(d,4)
+            acc = acc
+                + ((10 - 2) * (3 + 5) - (4 * 4 - 16) + pow(2, 3))
+                + (a + (b * (c - (d + (e * f)))))
+                + pow(a, 2) - pow(b, 4) + pow(c, 2) - pow(d, 4)
+                + sumar(a, b, c)
+                - sumar(d, e, f)
+                + (a * b * c - d * e + f * a)
+                - ((3 + 7) * (5 - 2) + (100 / 4) - (8 * 8 - 64));
+            i = i + 1;
+        }
+        j = j + 1;
+    }
+
+    tmp = factorial(8);
+    print("-- Resultado stress total --");
+    print(acc);
+    print(tmp);
+    return 0;
+}

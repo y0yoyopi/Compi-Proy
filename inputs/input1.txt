@@ -1,0 +1,24 @@
+// ===================================================================
+//  AMP1 — COMBINADO
+//  Mezcla constantes, variables simples y pow. Representa un caso
+//  "realista" donde entran en juego todas las optimizaciones a la vez.
+// ===================================================================
+int main() {
+    int a, b, c, acc;
+    a = 7;
+    b = 3;
+    c = 5;
+    acc = 0;
+
+    int i;
+    i = 0;
+    while (i < 2000000) {
+        acc = acc + (a * 2) + (b + 5) - (c * 3) + ((2 + 3) * (4 - 1)) - (a - b) + (c + 1) * 2 - (a + b + c);
+        acc = acc + pow(a, 2) - pow(b, 4) + pow(2, 3);
+        i = i + 1;
+    }
+
+    print("-- Resultado combinado --");
+    print(acc);
+    return 0;
+}

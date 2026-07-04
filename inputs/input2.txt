@@ -1,0 +1,22 @@
+// ===================================================================
+//  AMP2 — CONSTANTES
+//  Toda la expresion sumada en cada vuelta es literal (sin variables).
+//  Aisla el efecto del plegado de constantes (constant folding):
+//  con el plegado, esto colapsa a un solo valor inmediato por vuelta;
+//  sin el plegado, se recalcula toda la expresion en cada vuelta.
+// ===================================================================
+int main() {
+    int acc;
+    acc = 0;
+
+    int i;
+    i = 0;
+    while (i < 2000000) {
+        acc = acc + ((2 + 3) * (4 - 1) - (10 / 2) + (6 * 7) - (100 - 58) + (9 * 9) - (3 * 3 * 3));
+        i = i + 1;
+    }
+
+    print("-- Resultado constantes --");
+    print(acc);
+    return 0;
+}

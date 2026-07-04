@@ -1,0 +1,37 @@
+// ===================================================================
+//  AMP9 — BRANCHES EN BUCLE CALIENTE
+//  Combina constant folding + strength reduction dentro de ramas
+//  if/else ejecutadas en cada iteracion. El compilador optimizado
+//  elimina subexpresiones constantes antes de entrar al if, reduciendo
+//  el trabajo real en cada rama. Sin optimizacion, toda la expresion
+//  se recalcula en cada rama en cada vuelta.
+//  Iteraciones: 4 000 000.
+// ===================================================================
+int main() {
+    int a, b, c, acc, mod;
+    a = 6;
+    b = 4;
+    c = 9;
+    acc = 0;
+    mod = 0;
+
+    int i;
+    i = 0;
+    while (i < 4000000) {
+        mod = i - (i / 3) * 3;
+        if (mod == 0) {
+            acc = acc + pow(a, 2) + (3 + 7) * (5 - 2) - (100 / 4) + (8 * 8 - 64);
+        } else {
+            if (mod == 1) {
+                acc = acc + pow(b, 4) - (2 + 8) * (6 - 1) + (9 * 9 - 81) + (15 - 7) * 4;
+            } else {
+                acc = acc - pow(c, 2) + (4 + 6) * (7 - 3) - (50 / 5) + pow(a, 4) / 3;
+            }
+        }
+        i = i + 1;
+    }
+
+    print("-- Resultado branches en bucle --");
+    print(acc);
+    return 0;
+}

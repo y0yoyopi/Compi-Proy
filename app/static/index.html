@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compilador x86 — Proyecto Final</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff; --panel: #f4f6f9; --border: #d9dee6;
+    --text: #2b3340; --muted: #6b7686; --accent: #0277bd;
+    --ok: #2e7d32; --err: #c62828; --warn: #b26a00;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+  }
+  header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px; background: var(--panel);
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 15px; font-weight: 600; margin-right: auto; }
+  header h1 span { color: var(--accent); }
+  select, button {
+    background: #ffffff; color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 7px 14px; font-size: 13px; cursor: pointer;
+  }
+  #btn-compile { background: #1565c0; border-color: #1565c0; color: #ffffff; font-weight: 600; }
+  #btn-compile:hover { background: #1976d2; }
+  #btn-compile:disabled { opacity: .5; cursor: wait; }
+  main { flex: 1; display: flex; min-height: 0; }
+  .col { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  #col-editor { flex: 1.05; border-right: 1px solid var(--border); }
+  #col-result { flex: 1; }
+  .panel-title {
+    padding: 7px 14px; font-size: 11px; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--muted);
+    background: var(--panel); border-bottom: 1px solid var(--border);
+  }
+  .CodeMirror { flex: 1; height: auto; font-size: 14px; }
+  .cm-error-line { background: rgba(198, 40, 40, .12) !important; }
+  #error-bar {
+    display: none; padding: 9px 14px; font-size: 13px;
+    background: #fdecea; color: #b71c1c; border-top: 1px solid #f5c6c2;
+    white-space: pre-wrap;
+  }
+  #error-bar.ok { background: #e8f5e9; color: #1b5e20; border-top-color: #c8e6c9; }
+  #tabs { display: flex; background: var(--panel); border-bottom: 1px solid var(--border); }
+  #tabs button {
+    border: none; border-radius: 0; background: none; color: var(--muted);
+    padding: 9px 16px; font-size: 13px; border-bottom: 2px solid transparent;
+  }
+  #tabs button.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-content { flex: 1; overflow: auto; display: none; padding: 12px 14px; }
+  .tab-content.active { display: block; }
+  pre { font-family: 'Consolas', 'Menlo', monospace; font-size: 13px; line-height: 1.5; }
+  #out-run .exitcode { color: var(--muted); font-size: 12px; margin-top: 10px; }
+  /* ---- Árbol AST ---- */
+  .tree ul { list-style: none; padding-left: 20px; border-left: 1px dotted #c3ccd8; }
+  .tree li { margin: 1px 0; }
+  .tnode {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 1px 6px; border-radius: 4px; cursor: pointer; font-size: 13px;
+    font-family: 'Consolas', monospace;
+  }
+  .tnode:hover { background: #e8edf4; }
+  .tnode .kind { color: var(--accent); }
+  .tnode .lbl { color: var(--text); }
+  .tnode .ln { color: var(--muted); font-size: 11px; }
+  .toggle { color: var(--muted); width: 12px; display: inline-block; }
+  .collapsed > ul { display: none; }
+  /* ---- Tabla de tokens ---- */
+  table { border-collapse: collapse; font-size: 12.5px; font-family: 'Consolas', monospace; }
+  td, th { padding: 3px 12px; border-bottom: 1px solid #e3e8ef; text-align: left; }
+  th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--bg); }
+  td.tk-type { color: var(--accent); }
+  td.tk-pos { color: var(--muted); }
+  .placeholder { color: var(--muted); font-size: 13px; padding: 20px; text-align: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Compilador <span>x86</span> — Proyecto Final</h1>
+  <select id="sel-example"><option value="">Ejemplos…</option></select>
+  <button id="btn-compile">▶ Compilar y ejecutar</button>
+</header>
+
+<main>
+  <div class="col" id="col-editor">
+    <div class="panel-title">Editor de código</div>
+    <textarea id="editor"></textarea>
+    <div id="error-bar"></div>
+  </div>
+
+  <div class="col" id="col-result">
+    <div id="tabs">
+      <button data-tab="run" class="active">Salida</button>
+      <button data-tab="ast">AST</button>
+      <button data-tab="asm">Ensamblador x86</button>
+      <button data-tab="tokens">Tokens</button>
+    </div>
+    <div class="tab-content active" id="tab-run"><div class="placeholder">Compila un programa para ver su salida.</div></div>
+    <div class="tab-content" id="tab-ast"><div class="placeholder">El árbol de sintaxis aparecerá aquí.</div></div>
+    <div class="tab-content" id="tab-asm"><div class="placeholder">El código ensamblador aparecerá aquí.</div></div>
+    <div class="tab-content" id="tab-tokens"><div class="placeholder">El stream de tokens aparecerá aquí.</div></div>
+  </div>
+</main>
+
+<script>
+const cm = CodeMirror.fromTextArea(document.getElementById('editor'), {
+  mode: 'text/x-c++src', theme: 'default',
+  lineNumbers: true, indentUnit: 4, tabSize: 4,
+});
+cm.setValue('int main() {\n    int x = 5;\n    print(x * 2);\n    return 0;\n}\n');
+
+let lineaMarcada = null;
+function marcarError(msg) {
+  if (lineaMarcada !== null) { cm.removeLineClass(lineaMarcada, 'background', 'cm-error-line'); lineaMarcada = null; }
+  const m = msg && msg.match(/\[línea (\d+), col (\d+)\]/);
+  if (m) {
+    lineaMarcada = parseInt(m[1]) - 1;
+    cm.addLineClass(lineaMarcada, 'background', 'cm-error-line');
+    cm.scrollIntoView({ line: lineaMarcada, ch: 0 }, 80);
+  }
+}
+
+const errorBar = document.getElementById('error-bar');
+function setBarra(texto, ok) {
+  errorBar.style.display = texto ? 'block' : 'none';
+  errorBar.textContent = texto || '';
+  errorBar.className = ok ? 'ok' : '';
+}
+
+// ---- Tabs ----
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => activarTab(b.dataset.tab));
+function activarTab(nombre) {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('active', x.dataset.tab === nombre));
+  document.querySelectorAll('.tab-content').forEach(x => x.classList.toggle('active', x.id === 'tab-' + nombre));
+}
+
+// ---- Ejemplos ----
+fetch('/api/examples').then(r => r.json()).then(exs => {
+  const sel = document.getElementById('sel-example');
+  exs.forEach(e => {
+    const o = document.createElement('option');
+    o.value = e.id; o.textContent = e.name; o.dataset.code = e.code;
+    sel.appendChild(o);
+  });
+  sel.onchange = () => {
+    const o = sel.selectedOptions[0];
+    if (o && o.dataset.code) { cm.setValue(o.dataset.code); setBarra(''); marcarError(''); }
+  };
+});
+
+// ---- Árbol AST ----
+function renderTree(nodo) {
+  const li = document.createElement('li');
+  const div = document.createElement('div');
+  div.className = 'tnode';
+  const tiene = nodo.children && nodo.children.length;
+  div.innerHTML = `<span class="toggle">${tiene ? '▾' : '·'}</span>` +
+                  `<span class="kind">${nodo.kind}</span>` +
+                  `<span class="lbl">${escapeHtml(nodo.label)}</span>` +
+                  (nodo.line ? `<span class="ln">L${nodo.line}</span>` : '');
+  li.appendChild(div);
+  div.onclick = (ev) => {
+    ev.stopPropagation();
+    if (tiene) {
+      li.classList.toggle('collapsed');
+      div.querySelector('.toggle').textContent = li.classList.contains('collapsed') ? '▸' : '▾';
+    }
+    if (nodo.line) {  // saltar a la línea en el editor
+      cm.setCursor({ line: nodo.line - 1, ch: Math.max(0, (nodo.col || 1) - 1) });
+      cm.scrollIntoView({ line: nodo.line - 1, ch: 0 }, 80);
+      cm.focus();
+    }
+  };
+  if (tiene) {
+    const ul = document.createElement('ul');
+    nodo.children.forEach(c => ul.appendChild(renderTree(c)));
+    li.appendChild(ul);
+  }
+  return li;
+}
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ---- Compilar ----
+const btn = document.getElementById('btn-compile');
+btn.onclick = compilar;
+cm.setOption('extraKeys', { 'Ctrl-Enter': compilar });
+
+async function compilar() {
+  btn.disabled = true; btn.textContent = '⏳ Compilando…';
+  setBarra(''); marcarError('');
+  try {
+    const r = await fetch('/api/compile', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: cm.getValue() })
+    });
+    const d = await r.json();
+    pintarTokens(d.tokens || []);
+    pintarAst(d.ast);
+    pintarAsm(d.asm);
+    pintarSalida(d);
+    if (!d.success) {
+      setBarra(d.error, false);
+      marcarError(d.error);
+      activarTab('run');
+    } else {
+      setBarra('✓ Compilación exitosa', true);
+      activarTab('run');
+    }
+  } catch (e) {
+    setBarra('No se pudo contactar al servidor: ' + e.message, false);
+  }
+  btn.disabled = false; btn.textContent = '▶ Compilar y ejecutar';
+}
+
+function pintarTokens(tokens) {
+  const c = document.getElementById('tab-tokens');
+  if (!tokens.length) { c.innerHTML = '<div class="placeholder">Sin tokens.</div>'; return; }
+  let html = '<table><tr><th>#</th><th>Tipo</th><th>Lexema</th><th>Línea:Col</th></tr>';
+  tokens.forEach((t, i) => {
+    html += `<tr><td class="tk-pos">${i + 1}</td><td class="tk-type">${t.type}</td>` +
+            `<td>${escapeHtml(t.text)}</td><td class="tk-pos">${t.line}:${t.col}</td></tr>`;
+  });
+  c.innerHTML = html + '</table>';
+}
+
+function pintarAst(ast) {
+  const c = document.getElementById('tab-ast');
+  if (!ast) { c.innerHTML = '<div class="placeholder">No hay AST (el análisis sintáctico falló).</div>'; return; }
+  c.innerHTML = '';
+  const div = document.createElement('div'); div.className = 'tree';
+  const ul = document.createElement('ul'); ul.style.borderLeft = 'none'; ul.style.paddingLeft = '0';
+  ul.appendChild(renderTree(ast));
+  div.appendChild(ul); c.appendChild(div);
+}
+
+function pintarAsm(asm) {
+  const c = document.getElementById('tab-asm');
+  c.innerHTML = asm ? '' : '<div class="placeholder">No se generó ensamblador.</div>';
+  if (asm) { const p = document.createElement('pre'); p.textContent = asm; c.appendChild(p); }
+}
+
+function pintarSalida(d) {
+  const c = document.getElementById('tab-run');
+  c.id = 'tab-run'; c.innerHTML = '';
+  const pre = document.createElement('pre');
+  if (!d.success) {
+    pre.textContent = d.error; pre.style.color = 'var(--err)';
+    c.appendChild(pre); return;
+  }
+  const run = d.run;
+  if (!run) { pre.textContent = '(no se ejecutó)'; c.appendChild(pre); return; }
+  if (run.error && run.output === null) {
+    pre.textContent = run.error; pre.style.color = 'var(--err)';
+    c.appendChild(pre); return;
+  }
+  pre.textContent = run.output || '(sin salida)';
+  c.appendChild(pre);
+  const ec = document.createElement('div'); ec.className = 'exitcode';
+  ec.textContent = 'Código de salida: ' + run.exitCode;
+  c.appendChild(ec);
+  if (run.error) {
+    const e2 = document.createElement('pre');
+    e2.textContent = run.error; e2.style.color = 'var(--warn)';
+    c.appendChild(e2);
+  }
+}
+</script>
+</body>
+</html>
