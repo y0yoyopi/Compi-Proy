@@ -1,8 +1,3 @@
-// ===================================================================
-//  AMP1 — COMBINADO
-//  Mezcla constantes, variables simples y pow. Representa un caso
-//  "realista" donde entran en juego todas las optimizaciones a la vez.
-// ===================================================================
 int main() {
     int a, b, c, acc;
     a = 7;

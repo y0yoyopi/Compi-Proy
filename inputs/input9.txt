@@ -1,12 +1,3 @@
-// ===================================================================
-//  AMP9 — BRANCHES EN BUCLE CALIENTE
-//  Combina constant folding + strength reduction dentro de ramas
-//  if/else ejecutadas en cada iteracion. El compilador optimizado
-//  elimina subexpresiones constantes antes de entrar al if, reduciendo
-//  el trabajo real en cada rama. Sin optimizacion, toda la expresion
-//  se recalcula en cada rama en cada vuelta.
-//  Iteraciones: 4 000 000.
-// ===================================================================
 int main() {
     int a, b, c, acc, mod;
     a = 6;

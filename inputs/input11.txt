@@ -1,12 +1,3 @@
-// ===================================================================
-//  AMP11 — ARITMETICA DE PUNTO FLOTANTE SIMULADA CON ENTEROS
-//  Expresion algebraica densa que simula calculos de punto flotante
-//  usando solo enteros (escalados por 1000). Maximiza la densidad de
-//  operaciones aritmeticas por iteracion: 20+ operadores por vuelta.
-//  Aisla el efecto del orden de evaluacion Sethi-Ullman en expresiones
-//  muy anchas (muchos operandos al mismo nivel de precedencia).
-//  Iteraciones: 3 000 000.
-// ===================================================================
 int main() {
     int p, q, r, s, t, u, v, w, acc;
     p = 1000;
@@ -22,8 +13,7 @@ int main() {
     int i;
     i = 0;
     while (i < 3000000) {
-        // Expresion muy ancha — mismo nivel de precedencia para + y -
-        // Sethi-Ullman decide el orden optimo de evaluacion
+
         acc = acc
             + p - q + r - s + t - u + v - w
             + (p * q / 1000)

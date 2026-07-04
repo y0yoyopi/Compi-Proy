@@ -138,6 +138,11 @@ public:
   // Función auxiliar para inferir tipos ("auto") y conversiones
   Type* deduceType(Exp *e);
 
+  // Tipo "confiable" de una expresión para verificar compatibilidad en
+  // asignaciones. Devuelve "" cuando el tipo no se puede garantizar (llamadas,
+  // new, campos, etc.); en ese caso no se chequea, para evitar falsos errores.
+  std::string tipoConfiable(Exp *e);
+
   // ---- Visitas ----
   int visit(BinaryExp *exp) override;
   int visit(NumberExp *exp) override;

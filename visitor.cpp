@@ -21,6 +21,22 @@ static std::string loc(int line, int col) {
   return " [línea " + std::to_string(line) + ", col " + std::to_string(col) + "]";
 }
 
+// -----------------------------------------------------------------------------
+// Compatibilidad de tipos en asignaciones/inicializaciones.
+// esNumerico: tipos que se promueven/convierten entre sí sin error.
+// esIncompatible: solo marca los casos claramente inválidos (string ↔ numérico);
+// punteros, structs, templates y tipos no confiables no se chequean aquí.
+// -----------------------------------------------------------------------------
+static bool esNumerico(const std::string &t) {
+  return t == "int" || t == "float" || t == "bool" || t == "char";
+}
+
+static bool esIncompatible(const std::string &declarado, const std::string &valor) {
+  if (declarado == "string" && esNumerico(valor)) return true;
+  if (esNumerico(declarado) && valor == "string") return true;
+  return false;
+}
+
 // =============================================================================
 // Despacho del patrón Visitor (accept en cada nodo del AST)
 // =============================================================================
@@ -182,9 +198,17 @@ int TypeCheckerVisitor::visit(VarDec *vd) {
     entorno.add_var(nombre, 0);
     tiposVar.add_var(nombre, varType->toString());
     sizesVar[nombre] = size;
-    
+
     if (init_exp) {
       init_exp->accept(this);
+      // Verificación de compatibilidad de tipos en la inicialización
+      std::string declarado = varType->toString();
+      std::string valor = tipoConfiable(init_exp);
+      if (!valor.empty() && esIncompatible(declarado, valor))
+        throw std::runtime_error(
+            "Error semántico" + loc(vd->line, vd->col) +
+            ": no se puede inicializar la variable '" + nombre +
+            "' de tipo '" + declarado + "' con un valor de tipo '" + valor + "'");
     }
     
     if (funcionActual != "<global>") {
@@ -192,6 +216,38 @@ int TypeCheckerVisitor::visit(VarDec *vd) {
     }
   }
   return 0;
+}
+
+// -----------------------------------------------------------------------------
+// tipoConfiable — tipo de una expresión SOLO cuando se puede garantizar.
+// Se usa para verificar compatibilidad en asignaciones. Devuelve "" (no
+// chequear) para llamadas a función, new, campos de struct, etc., de modo que
+// nunca produce falsos errores en código válido.
+// -----------------------------------------------------------------------------
+std::string TypeCheckerVisitor::tipoConfiable(Exp *e) {
+  if (!e) return "";
+  if (dynamic_cast<StringExp *>(e)) return "string";
+  if (dynamic_cast<NumberExp *>(e)) return "int";
+  if (dynamic_cast<FloatExp *>(e))  return "float";
+  if (auto id = dynamic_cast<IdExp *>(e)) {
+    if (tiposVar.check(id->value)) return tiposVar.lookup(id->value);
+    return "";
+  }
+  if (auto b = dynamic_cast<BinaryExp *>(e)) {
+    // Comparaciones y lógicos siempre producen int (booleano)
+    if (b->op == LE_OP || b->op == GT_OP || b->op == LEQ_OP ||
+        b->op == GEQ_OP || b->op == EQ_OP || b->op == NE_OP ||
+        b->op == AND_OP || b->op == OR_OP)
+      return "int";
+    std::string l = tipoConfiable(b->left);
+    std::string r = tipoConfiable(b->right);
+    if (l == "string" || r == "string") return "string";
+    if (l.empty() || r.empty()) return "";
+    if (l == "float" || r == "float") return "float";
+    if (esNumerico(l) && esNumerico(r)) return "int";
+    return "";
+  }
+  return ""; // desconocido: no se chequea
 }
 
 // Inferencia de tipos usada por el análisis semántico. Mira la tabla de
@@ -310,6 +366,20 @@ int TypeCheckerVisitor::visit(ExprStm *stm) {
 int TypeCheckerVisitor::visit(AssignStm *stm) {
   stm->target->accept(this);
   stm->e->accept(this);
+
+  // Verificación de compatibilidad de tipos en la asignación
+  std::string tDestino = tipoConfiable(stm->target);
+  std::string tValor = tipoConfiable(stm->e);
+  if (!tDestino.empty() && !tValor.empty() &&
+      esIncompatible(tDestino, tValor)) {
+    std::string nombre = "el destino";
+    if (auto id = dynamic_cast<IdExp *>(stm->target))
+      nombre = "'" + id->value + "'";
+    throw std::runtime_error(
+        "Error semántico" + loc(stm->line, stm->col) +
+        ": no se puede asignar un valor de tipo '" + tValor + "' a " +
+        nombre + " de tipo '" + tDestino + "'");
+  }
   return 0;
 }
 
